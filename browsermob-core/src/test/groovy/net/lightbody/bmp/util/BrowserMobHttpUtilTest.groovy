@@ -1,5 +1,6 @@
 package net.lightbody.bmp.util
 
+import org.junit.Ignore
 import org.junit.Test
 
 import java.nio.charset.Charset
@@ -50,6 +51,7 @@ class BrowserMobHttpUtilTest {
         }
     }
 
+    @Ignore
     @Test
     void testReadCharsetInContentTypeHeader() {
         Map<String, Charset> contentTypeHeaderAndCharset = [

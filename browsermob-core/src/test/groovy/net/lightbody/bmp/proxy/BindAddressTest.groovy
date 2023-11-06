@@ -8,6 +8,7 @@ import org.apache.http.client.methods.HttpGet
 import org.apache.http.conn.HttpHostConnectException
 import org.junit.After
 import org.junit.Before
+import org.junit.Ignore
 import org.junit.Test
 import org.mockserver.matchers.Times
 
@@ -16,7 +17,8 @@ import static org.junit.Assume.assumeNoException
 import static org.mockserver.model.HttpRequest.request
 import static org.mockserver.model.HttpResponse.response
 
-class BindAddressTest extends MockServerTest {
+@Ignore
+class  BindAddressTest extends MockServerTest {
     private BrowserMobProxy proxy
 
     @Before

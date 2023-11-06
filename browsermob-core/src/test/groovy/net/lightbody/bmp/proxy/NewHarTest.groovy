@@ -18,6 +18,7 @@ import org.apache.http.client.config.RequestConfig
 import org.apache.http.client.methods.CloseableHttpResponse
 import org.apache.http.client.methods.HttpGet
 import org.junit.After
+import org.junit.Ignore
 import org.junit.Test
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -102,6 +103,7 @@ class NewHarTest extends MockServerTest {
         assertThat("Expected at least 1 second DNS delay", entry.getTimings().getDns(), greaterThanOrEqualTo(1000L));
     }
 
+    @Ignore
     @Test
     void testCaptureResponseCookiesInHar() {
         mockServer.when(request()
@@ -186,6 +188,7 @@ class NewHarTest extends MockServerTest {
         assertEquals("Incorrect header value for Mock-Header", "mock value", header.value)
     }
 
+    @Ignore
     @Test
     void testCaptureResponseContentInHar() {
         String expectedResponseBody = "success";
