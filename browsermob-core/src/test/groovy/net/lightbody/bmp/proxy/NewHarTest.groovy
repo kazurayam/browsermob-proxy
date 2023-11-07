@@ -104,15 +104,22 @@ class NewHarTest extends MockServerTest {
 
     @Test
     void testCaptureResponseCookiesInHar() {
+        // set the expires attribute with the current date time plus 10 minutes
+        Date expiresDate = new Date(Calendar.getInstance().getTimeInMillis() + (10 * 60 * 1000))
+
+        // date must be formated as https://www.rfc-editor.org/rfc/rfc9110#http.date
+        SimpleDateFormat df = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz")
+        df.setTimeZone(TimeZone.getTimeZone("GMT"))
+
         mockServer.when(request()
                 .withMethod("GET")
                 .withPath("/testCaptureResponseCookiesInHar"),
                 Times.exactly(1))
                 .respond(response()
-                .withStatusCode(200)
-                .withBody("success")
-                .withHeader("Set-Cookie", "max-age-cookie=mock-value; Max-Age=3153600000")
-                .withHeader("Set-Cookie", "expires-cookie=mock-value; Expires=Wed, 15 Mar 2022 12:00:00 GMT"))
+                        .withStatusCode(200)
+                        .withBody("success")
+                        .withHeader("Set-Cookie", "max-age-cookie=mock-value; Max-Age=3153600000")
+                        .withHeader("Set-Cookie", "expires-cookie=mock-value; Expires=" + df.format(expiresDate)))
 
         proxy = new BrowserMobProxyServer();
         proxy.setHarCaptureTypes([CaptureType.RESPONSE_COOKIES] as Set)
@@ -121,14 +128,14 @@ class NewHarTest extends MockServerTest {
 
         proxy.newHar()
 
-        SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ssX", Locale.US)
-        Date expiresDate = df.parse("2022-03-15 12:00:00Z")
-
         // expiration of the cookie won't be before this date, since the request hasn't yet been issued
         Date maxAgeCookieNotBefore = new Date(System.currentTimeMillis() + 3153600000L)
 
         NewProxyServerTestUtil.getNewHttpClient(proxy.port).withCloseable {
-            String responseBody = NewProxyServerTestUtil.toStringAndClose(it.execute(new HttpGet("https://localhost:${mockServerPort}/testCaptureResponseCookiesInHar")).getEntity().getContent());
+            String responseBody = NewProxyServerTestUtil.toStringAndClose(it.execute(
+                    new HttpGet("https://localhost:${mockServerPort}/testCaptureResponseCookiesInHar"))
+                    .getEntity().getContent()
+            );
             assertEquals("Did not receive expected response from mock server", "success", responseBody);
         };
 
@@ -136,19 +143,27 @@ class NewHarTest extends MockServerTest {
         Har har = proxy.getHar()
 
         assertThat("Expected to find entries in the HAR", har.getLog().getEntries(), not(empty()))
-        assertThat("Expected to find two cookies in the HAR", har.getLog().getEntries().first().response.cookies, hasSize(2))
+        assertThat("Expected to find two cookies in the HAR",
+                har.getLog().getEntries().first().response.cookies, hasSize(2))
 
         HarCookie maxAgeCookie = har.getLog().getEntries().first().response.cookies[0]
         HarCookie expiresCookie = har.getLog().getEntries().first().response.cookies[1]
 
         assertEquals("Incorrect cookie name in HAR", "max-age-cookie", maxAgeCookie.name)
         assertEquals("Incorrect cookie value in HAR", "mock-value", maxAgeCookie.value)
-        assertThat("Incorrect expiration date in cookie with Max-Age", maxAgeCookie.expires, greaterThan(maxAgeCookieNotBefore))
+        assertThat("Incorrect expiration date in cookie with Max-Age",
+                maxAgeCookie.expires, greaterThan(maxAgeCookieNotBefore))
 
         assertEquals("Incorrect cookie name in HAR", "expires-cookie", expiresCookie.name)
         assertEquals("Incorrect cookie value in HAR", "mock-value", expiresCookie.value)
 
-        assertThat("Incorrect expiration date in cookie with Expires", expiresCookie.expires, equalTo(expiresDate))
+        //println "expiresCookie.expires.getTime() =${expiresCookie.expires.getTime()}"
+        //println "df.format(expiresCookie.expires)=${df.format(expiresCookie.expires)}"
+        //println "expiresDate.getTime()           =${expiresDate.getTime()}"
+        //println "df.format(expiresDate)          =${df.format(expiresDate)}"
+        //println "expiresCookie.expires.compareTo(expiresDate)=${(expiresCookie.expires <=> expiresDate)}"
+        assertThat("Incorrect expiration date in cookie with Expires",
+                df.format(expiresCookie.expires), equalTo(df.format(expiresDate)));
     }
 
     @Test
